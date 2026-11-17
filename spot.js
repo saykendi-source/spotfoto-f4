@@ -167,7 +167,7 @@
       a.textContent = "Menyiapkan link unduh…";
     } else {
       a.removeAttribute("aria-disabled");
-      a.href = h.unduh;
+      a.href = hrefUnduh(h);
       a.setAttribute("download", h.nama || "spotfoto.jpg");
       if (!h.unduh.startsWith("data:")) a.target = "_blank"; else a.removeAttribute("target");
       a.textContent = vid ? "Simpan video" : "Simpan foto";
@@ -177,6 +177,21 @@
       : (h.catatan === "drive-gagal" ? "Penyimpanan cadangan sedang bermasalah, jadi foto langsung dikirim ke HP-mu. Simpan sekarang ya."
         : "Jika tombol simpan tidak bekerja, tekan lama gambar lalu pilih simpan.");
     siapkanBagikan(h);
+  }
+
+  // Browser (terutama Safari dan Chrome di HP) menolak membuka tautan data: secara langsung.
+  // Ubah menjadi alamat blob: lokal supaya tombol Simpan bisa mengunduh berkasnya.
+  const blobCache = {};
+  function hrefUnduh(h) {
+    if (!h.unduh || !h.unduh.startsWith("data:")) return h.unduh;
+    if (!blobCache[h.nama]) {
+      const [kepala, isi] = h.unduh.split(",");
+      const mime = (kepala.match(/data:([^;]+)/) || [])[1] || "image/jpeg";
+      const bin = atob(isi), arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      blobCache[h.nama] = URL.createObjectURL(new Blob([arr], { type: mime }));
+    }
+    return blobCache[h.nama];
   }
 
   async function siapkanBagikan(h) {
@@ -211,7 +226,7 @@
     $("selesaiJudul").textContent = j;
     const siap = galeri.filter(g => g.unduh);
     $("selesaiTeks").textContent = siap.length ? (t ? t + " " : "") + "Fotomu:" : (t || "Pindai QR lagi kapan saja untuk berfoto.");
-    $("galeri").innerHTML = siap.map(g => `<a href="${g.unduh}" download="${g.nama}" target="_blank" rel="noopener"><img src="${g.pratinjau}" alt="${g.jenis === "video" ? "Boomerang" : "Foto"} ${g.nama}"><b>${g.jenis === "video" ? "🔁 Boomerang" : String(g.format || "").startsWith("strip") ? "🎞️ Strip" : ((P.format.find(f => f.id === g.format) || {}).nama || "")}</b></a>`).join("");
+    $("galeri").innerHTML = siap.map(g => `<a href="${hrefUnduh(g)}" download="${g.nama}"${g.unduh.startsWith("data:") ? "" : ' target="_blank" rel="noopener"'}><img src="${g.pratinjau}" alt="${g.jenis === "video" ? "Boomerang" : "Foto"} ${g.nama}"><b>${g.jenis === "video" ? "🔁 Boomerang" : String(g.format || "").startsWith("strip") ? "🎞️ Strip" : ((P.format.find(f => f.id === g.format) || {}).nama || "")}</b></a>`).join("");
     $("catatanHapus").hidden = !siap.some(g => g.lihat);
     ke("selesai");
   }
