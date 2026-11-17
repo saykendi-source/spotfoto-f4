@@ -36,7 +36,7 @@ input{font:inherit;padding:12px 14px;border-radius:12px;border:1px solid var(--g
 <body>
 <main>
   <h1>Cek perangkat Spot Foto</h1>
-  <p class="sub">Buka halaman ini di TV box (lewat Fully Kiosk atau browser yang dipakai) untuk memastikan semuanya siap.</p>
+  <p class="sub">Buka halaman ini di TV box (lewat Chrome atau browser yang dipakai) untuk memastikan semuanya siap.</p>
 
   <div class="atas">
     <div>
@@ -47,7 +47,7 @@ input{font:inherit;padding:12px 14px;border-radius:12px;border:1px solid var(--g
         <button class="dua" id="salin">Salin laporan</button>
       </div>
     </div>
-    <div><video id="vid" playsinline muted></video><p class="catatan">Pratinjau kamera (tercermin, seperti di layar Spot Foto).</p></div>
+    <div><video id="vid" playsinline muted autoplay poster="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></video><p class="catatan">Pratinjau kamera (tercermin, seperti di layar Spot Foto).</p></div>
   </div>
 
   <section>
@@ -71,30 +71,55 @@ const hasil = [];
 const IKON = { ok: "✅", peringatan: "⚠️", gagal: "❌", info: "ℹ️" };
 const tunggu = ms => new Promise(r => setTimeout(r, ms));
 
+// Hasil gagal dan peringatan selalu tampil paling atas, supaya terlihat di layar TV tanpa menggulir.
+const URUT = { gagal: 0, peringatan: 1, ok: 2, info: 3 };
 function tambah(nama, status, detail) {
   hasil.push({ nama, status, detail });
   const li = document.createElement("li");
+  li.dataset.urut = URUT[status];
   li.innerHTML = `<span class="i">${IKON[status]}</span><span class="n"></span><span class="d"></span>`;
   li.querySelector(".n").textContent = nama; li.querySelector(".d").textContent = detail;
-  $("daftar").appendChild(li);
+  const daftar = $("daftar");
+  const sesudah = [...daftar.children].find(x => Number(x.dataset.urut) > URUT[status]);
+  daftar.insertBefore(li, sesudah || null);
 }
+// Ringkas user agent: model, Android, mesin browser, dan apakah ini WebView di dalam aplikasi lain.
+function ringkasUA() {
+  const ua = navigator.userAgent;
+  const model = (ua.match(/Android [\d.]+; ([^;)]+?)(?: Build|\))/) || [])[1] || "";
+  const android = (ua.match(/Android ([\d.]+)/) || [])[1];
+  const chrome = (ua.match(/Chrome\/([\d]+)/) || [])[1];
+  const webview = /; wv\)/.test(ua) || /Version\/4\.0/.test(ua);
+  return { teks: [model, android && "Android " + android, chrome && (webview ? "WebView " : "Chrome ") + chrome].filter(Boolean).join(", "), webview };
+}
+let sedangPeriksa = false;
 const ms = t => Math.round(t) + " ms";
 
 async function periksa() {
+  if (sedangPeriksa) return;
+  sedangPeriksa = true;
+  try { await periksaIsi(); } finally { sedangPeriksa = false; }
+}
+async function periksaIsi() {
   hasil.length = 0; $("daftar").innerHTML = "";
   $("ringkas").className = "ringkas"; $("ringkas").querySelector("b").textContent = "Memeriksa…";
+  $("ringkasTeks").textContent = "Izinkan akses kamera bila diminta.";
 
-  // 1. Perangkat
+  // 1. Perangkat dan jenis browser
   const mem = navigator.deviceMemory ? navigator.deviceMemory + " GB RAM, " : "";
-  tambah("Perangkat", "info", `${mem}${navigator.hardwareConcurrency || "?"} inti CPU, layar ${screen.width}×${screen.height} (DPR ${devicePixelRatio}). ${navigator.userAgent}`);
+  const ua = ringkasUA();
+  tambah("Perangkat", "info", `${ua.teks}. ${mem}${navigator.hardwareConcurrency || "?"} inti CPU, layar ${screen.width}×${screen.height}.`);
+  if (ua.webview) tambah("Jenis browser", "peringatan", "Halaman ini terbuka di WebView (browser bawaan di dalam aplikasi lain), bukan aplikasi Chrome. WebView sering memblokir kamera dan video otomatis. Buka alamat yang sama lewat aplikasi Google Chrome.");
 
   // 2. Kamera
   const vid = $("vid");
   let stream = null;
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("getUserMedia tidak tersedia (halaman harus dibuka lewat https)");
-    stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
-    vid.srcObject = stream; await vid.play();
+    const minta = navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    stream = await Promise.race([minta, tunggu(12000).then(() => { throw new Error("kamera tidak merespons dalam 12 detik (izin tidak muncul atau diblokir aplikasi browser)"); })]);
+    vid.srcObject = stream;
+    try { await Promise.race([vid.play(), tunggu(4000)]); } catch (e) { throw new Error("video kamera tidak bisa diputar otomatis (" + (e.name || e.message) + ")"); }
     for (let i = 0; i < 40 && !vid.videoWidth; i++) await tunggu(50);
     const set = stream.getVideoTracks()[0].getSettings();
     const daftarKam = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
@@ -110,7 +135,7 @@ async function periksa() {
       (st === "ok" ? "" : st === "peringatan" ? " Resolusi 720p: Feed 4:5 akan kurang tajam (diperbesar sekitar 1,9×)." : " Resolusi terlalu rendah untuk Spot Foto."));
     if (fps && fps < 15) tambah("Kelancaran kamera", "peringatan", "Gambar kamera kurang dari 15 fps; preview di TV akan terasa patah-patah.");
   } catch (e) {
-    tambah("Kamera", "gagal", "Kamera tidak bisa dibuka: " + (e.message || e.name) + ". Periksa kabel USB, izin kamera di Fully Kiosk, atau coba port USB lain.");
+    tambah("Kamera", "gagal", "Kamera tidak bisa dibuka: " + (e.message || e.name) + ". Periksa izin kamera untuk aplikasi Chrome, kabel USB, atau coba port USB lain.");
   }
 
   // 3. Filter kanvas

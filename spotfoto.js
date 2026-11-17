@@ -173,7 +173,7 @@
     <div class="sf-card"><h2 id="sfGalatJudul">Kamera tidak dapat dinyalakan</h2><p id="sfGalatTeks"></p></div>
   </section>
   <section class="sf-cam">
-    <video class="sf-video" id="sfVideo" playsinline muted></video>
+    <video class="sf-video" id="sfVideo" playsinline muted autoplay poster="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></video>
     <canvas class="sf-bingkai" id="sfBingkai" width="1920" height="1080"></canvas>
     <img class="sf-beku" id="sfBeku" alt="">
     <div class="sf-bar"><span class="sf-tag">📸 Spot Foto</span><span class="sf-fmt" id="sfFmt"></span><span class="sf-antre" id="sfAntre"></span><span class="sf-next" id="sfNext"></span></div>
