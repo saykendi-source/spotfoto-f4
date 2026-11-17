@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#061631">
+<title>Spot Foto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --malam:#061631; --malam-2:#0b2550; --biru:#0a5bd8; --langit:#5aa2ff; --kertas:#fbfaf6;
+  --teks:#f2f6ff; --redup:rgba(226,236,255,.68); --garis:rgba(255,255,255,.16); --kuning:#ffd27a; --merah:#ff8a7a;
+  color-scheme:dark;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{min-height:100%;margin:0;color:var(--teks);
+  font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(120% 60% at 10% 0%,#17489a 0%,transparent 60%),var(--malam);background-attachment:fixed;
+  -webkit-tap-highlight-color:transparent}
+.wrap{max-width:460px;margin:0 auto;padding:18px 20px 28px;min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+header .logo{width:42px;height:42px;border-radius:14px;background:var(--biru);display:grid;place-items:center;font-size:22px;flex:none}
+header b{display:block;font-size:18px;font-weight:800;letter-spacing:-.01em}
+header small{display:block;font-size:13.5px;color:var(--redup);font-weight:600}
+.sisa{margin-left:auto;font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.1);visibility:hidden;white-space:nowrap}
+.sisa.on{visibility:visible}
+.sisa.mepet{background:var(--kuning);color:#2a1d00}
+
+section[data-layar]{display:none;flex:1;flex-direction:column}
+section[data-layar].aktif{display:flex}
+.btn[aria-disabled="true"]{opacity:.55;pointer-events:none}
+.nomor{font-size:88px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 4px}
+.nomor small{display:block;font-size:15px;font-weight:700;letter-spacing:0;color:var(--redup);margin-bottom:6px}
+
+h1{margin:0;font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-.025em}
+p{margin:12px 0 0;font-size:16px;line-height:1.5;color:var(--redup)}
+.tengah{margin:auto 0;text-align:center;padding:30px 0}
+.spin{width:54px;height:54px;margin:0 auto 26px;border-radius:50%;border:6px solid rgba(255,255,255,.15);border-top-color:#fff;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Tombol */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border:0;border-radius:18px;
+  font:inherit;font-size:17px;font-weight:800;text-decoration:none;cursor:pointer;background:#fff;color:var(--malam)}
+.btn.dua{background:rgba(255,255,255,.12);color:var(--teks);border:1px solid var(--garis)}
+.btn.teks{background:none;color:var(--redup);min-height:48px;font-weight:700}
+.btn:focus-visible,.chip:focus-visible,.rana:focus-visible{outline:3px solid var(--langit);outline-offset:3px}
+.btn:disabled{opacity:.5}
+.tumpuk{display:grid;gap:10px;margin-top:22px}
+
+/* Kode */
+.kotak{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:30px 0 6px}
+.kotak span{height:84px;border-radius:20px;background:rgba(255,255,255,.08);border:2px solid var(--garis);
+  display:grid;place-items:center;font-size:44px;font-weight:800}
+.kotak span.aktif{border-color:var(--langit);background:rgba(90,162,255,.14)}
+.kotak input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;caret-color:transparent}
+.pesan{min-height:24px;margin-top:14px;font-size:15px;font-weight:700;color:var(--kuning)}
+
+/* Kamera */
+.petunjuk{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid var(--garis);
+  font-size:15px;font-weight:600;color:var(--redup)}
+.petunjuk b{color:var(--teks)}
+.grup{margin-top:22px}
+.grup h2{margin:0 0 10px;font-size:15px;font-weight:700;color:var(--redup)}
+.baris{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;margin:0 -2px;scrollbar-width:none}
+.baris::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:9px;min-height:46px;padding:7px 15px 7px 7px;border-radius:999px;border:1.5px solid var(--garis);
+  background:rgba(255,255,255,.06);color:var(--teks);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.chip.polos{padding-left:15px}
+.chip[aria-pressed="true"]{background:#fff;color:var(--malam);border-color:#fff}
+.chip i{width:32px;height:32px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 34% 34%,#ffd9b8 0 22%,transparent 23%),linear-gradient(140deg,#f08a4b,#5aa2ff 55%,#1d7a3e)}
+.teks-wrap{position:relative}
+.teks-wrap input{width:100%;min-height:54px;padding:12px 64px 12px 16px;border-radius:16px;border:1.5px solid var(--garis);
+  background:var(--kertas);color:#1f3a6e;font:inherit;font-size:17px;font-weight:700}
+.teks-wrap input::placeholder{color:#8a93a3;font-weight:600}
+.teks-wrap input:focus{outline:3px solid var(--langit);outline-offset:2px}
+.teks-wrap span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:#8a93a3}
+.rana-wrap{margin-top:auto;padding-top:30px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.rana{width:112px;height:112px;border-radius:50%;border:7px solid #fff;background:transparent;padding:7px;cursor:pointer;touch-action:manipulation}
+.rana span{display:block;width:100%;height:100%;border-radius:50%;background:#fff;transition:transform .12s}
+.rana:active span{transform:scale(.88)}
+.rana:disabled{opacity:.45}
+.rana-label{font-size:16px;font-weight:700;min-height:22px;text-align:center;max-width:300px}
+
+/* Hasil */
+.media{display:flex;justify-content:center;margin-top:20px}
+.foto{display:block;max-width:100%;max-height:56vh;width:auto;height:auto;border-radius:10px;border:8px solid var(--kertas);background:#20304a;
+  box-shadow:0 22px 44px -16px rgba(0,0,0,.7);transform:rotate(-1.2deg)}
+.foto[hidden]{display:none}
+.mode{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;padding:5px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid var(--garis);margin-top:22px}
+.mode button{min-height:46px;border:0;border-radius:14px;background:none;color:var(--redup);font:inherit;font-size:15.5px;font-weight:800;cursor:pointer}
+.mode button[hidden]{display:none}
+.mode button[aria-pressed="true"]{background:#fff;color:var(--malam)}
+.mode button:focus-visible{outline:3px solid var(--langit);outline-offset:2px}
+.rasio{display:inline-block;border:2px solid currentColor;border-radius:3px;margin-right:2px;vertical-align:-2px}
+.galeri{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.galeri a{display:block;border-radius:12px;overflow:hidden;border:4px solid var(--kertas)}
+.galeri a{position:relative}
+.galeri img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+.galeri b{position:absolute;left:6px;bottom:6px;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:99px;background:rgba(6,22,49,.8);color:#fff}
+.catatan{font-size:13.5px;margin-top:16px}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.rana span{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true">📸</div>
+    <div><b>Spot Foto</b><small id="tempat">Lorong Gedung</small></div>
+    <div class="sisa" id="sisa" role="timer"></div>
+  </header>
+
+  <section data-layar="hubung"><div class="tengah"><div class="spin"></div><h1>Menghubungkan ke layar…</h1><p>Pastikan kamu berada di depan layar TV.</p></div></section>
+
+  <section data-layar="antre"><div class="tengah">
+    <div class="nomor" id="antreNomor"><small>Antreanmu</small>–</div>
+    <h1>Layar sedang dipakai</h1>
+    <p id="antreTeks">Giliranmu dimulai otomatis. Biarkan halaman ini tetap terbuka.</p></div></section>
+
+  <section data-layar="info"><div class="tengah"><h1 id="infoJudul"></h1><p id="infoTeks"></p>
+    <div class="tumpuk" id="infoTombol" hidden><button class="btn" data-aksi="muatUlang">Coba lagi</button></div></div></section>
+
+  <section data-layar="kode">
+    <h1>Ketik kode yang muncul di layar TV</h1>
+    <p>Kode ini memastikan kamu sedang berada di depan layar.</p>
+    <label class="kotak" id="kotak">
+      <span></span><span></span><span></span><span></span>
+      <input id="inKode" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" aria-label="Kode 4 angka dari layar TV">
+    </label>
+    <div class="pesan" id="pesanKode" role="alert"></div>
+    <div class="tumpuk" style="margin-top:auto"><button class="btn teks" data-aksi="selesai">Batal</button></div>
+  </section>
+
+  <section data-layar="siap"><div class="tengah"><div class="spin"></div><h1>Kamera sedang dinyalakan</h1><p>Lihat ke layar TV dan siapkan gayamu.</p></div></section>
+
+  <section data-layar="kamera">
+    <div class="petunjuk"><span aria-hidden="true">📺</span><span>Lihat ke <b>layar TV</b>. Pilih gaya di sini, lalu jepret.</span></div>
+    <div class="mode" id="pilMode" role="group" aria-label="Mode"></div>
+    <div class="grup" id="grupJumlah" hidden><h2>Jumlah foto</h2><div class="baris" id="pilJumlah"></div></div>
+    <div class="grup" id="grupFormat"><h2>Ukuran</h2><div class="baris" id="pilFormat"></div></div>
+    <div class="grup"><h2>Filter</h2><div class="baris" id="pilFilter"></div></div>
+    <div class="grup" id="grupBingkai"><h2>Bingkai</h2><div class="baris" id="pilFrame"></div></div>
+    <div class="grup" id="grupTeks" hidden>
+      <h2><label for="inTeks" id="labelTeks">Tulisan di polaroid</label></h2>
+      <div class="teks-wrap">
+        <input id="inTeks" type="text" maxlength="40" placeholder="Tulis sesuatu, misalnya: Hari pertama kuliah!" autocomplete="off" enterkeyhint="done">
+        <span id="hitungTeks">0/40</span>
+      </div>
+      <div class="pesan" id="pesanTeks" role="alert"></div>
+    </div>
+    <div class="rana-wrap">
+      <button class="rana" id="rana" data-aksi="jepret" aria-label="Jepret foto"><span></span></button>
+      <div class="rana-label" id="ranaLabel">Jepret</div>
+      <button class="btn teks" data-aksi="selesai">Selesai</button>
+    </div>
+  </section>
+
+  <section data-layar="hasil">
+    <h1 id="hasilJudul">Fotomu sudah jadi!</h1>
+    <div class="media">
+      <img class="foto" id="hasilFoto" alt="Hasil foto">
+      <video class="foto" id="hasilVideo" autoplay loop muted playsinline hidden></video>
+    </div>
+    <div class="tumpuk">
+      <a class="btn" id="hasilUnduh" download>Simpan foto</a>
+      <button class="btn dua" id="hasilBagikan" hidden>Bagikan</button>
+      <button class="btn dua" data-aksi="lagi" id="btnLagi">Foto lagi</button>
+      <button class="btn teks" data-aksi="selesai">Selesai</button>
+    </div>
+    <p class="catatan" id="hasilCatatan">Jika tombol simpan tidak bekerja, tekan lama gambar lalu pilih simpan.</p>
+  </section>
+
+  <section data-layar="selesai">
+    <h1 id="selesaiJudul">Terima kasih sudah mampir!</h1>
+    <p id="selesaiTeks"></p>
+    <div class="galeri" id="galeri"></div>
+    <div class="tumpuk"><button class="btn" data-aksi="baru">Mulai sesi baru</button></div>
+    <p class="catatan" id="catatanHapus">Foto di server dihapus otomatis setelah 7 hari. Simpan yang kamu suka sekarang.</p>
+  </section>
+
+  <section data-layar="galat"><div class="tengah"><h1 id="galatJudul">Ada masalah</h1><p>Coba beberapa saat lagi.</p>
+    <div class="tumpuk"><button class="btn" data-aksi="baru">Coba lagi</button></div></div></section>
+</div>
+
+<script src="spotfoto-config.js"></script>
+<script src="spotfoto-transport.js"></script>
+<script src="spot.js"></script>
+</body>
+</html>

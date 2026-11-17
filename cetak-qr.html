@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cetak QR Spot Foto</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--malam:#061631;--biru:#0a5bd8}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:#e7ecf2;color:var(--malam)}
+.alat{max-width:640px;margin:24px auto;padding:18px 20px;background:#fff;border-radius:16px;display:grid;gap:12px;font-size:15px}
+.alat label{display:grid;gap:6px;font-weight:700}
+.alat input{font:inherit;padding:10px 12px;border:1px solid #c9d3df;border-radius:10px}
+.alat button{font:inherit;font-weight:800;padding:12px;border:0;border-radius:12px;background:var(--biru);color:#fff;cursor:pointer}
+.alat small{color:#56657a}
+/* Poster A5 */
+.poster{width:148mm;height:210mm;margin:0 auto 40px;background:var(--malam);color:#fff;border-radius:6mm;
+  padding:14mm 12mm;display:flex;flex-direction:column;align-items:center;text-align:center;
+  background-image:radial-gradient(120% 60% at 10% 0%,#17489a,transparent 60%)}
+.poster .ikon{font-size:22mm;line-height:1}
+.poster h1{margin:5mm 0 0;font-size:15mm;line-height:1;font-weight:800;letter-spacing:-.03em}
+.poster p{margin:4mm 0 0;font-size:5.2mm;font-weight:600;opacity:.85;line-height:1.35}
+.qr{margin-top:9mm;width:78mm;height:78mm;padding:5mm;background:#fff;border-radius:5mm}
+.qr img,.qr canvas{width:100%!important;height:100%!important}
+.langkah{margin-top:auto;display:flex;gap:4mm;font-size:4.2mm;font-weight:700;opacity:.9}
+.langkah span{padding:2mm 4mm;border-radius:99px;background:rgba(255,255,255,.12)}
+@media print{
+  @page{size:A5;margin:0}
+  body{background:none}
+  .alat{display:none}
+  .poster{margin:0;border-radius:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="alat">
+  <label>Alamat halaman HP (spot.html)<input id="url"></label>
+  <label>Lokasi<input id="lok" value="F4"></label>
+  <button onclick="window.print()">Cetak poster</button>
+  <small>Cetak di kertas A5, lalu tempel di dekat TV pada ketinggian yang mudah dijangkau HP.</small>
+</div>
+
+<div class="poster">
+  <div class="ikon">📸</div>
+  <h1>Foto di sini!</h1>
+  <p id="sub">Pindai kode ini, lalu lihat ke layar TV</p>
+  <div class="qr" id="qr"></div>
+  <div class="langkah"><span>Pindai</span><span>Ketik kode di layar</span><span>Jepret</span></div>
+</div>
+
+<script>
+const url = document.getElementById("url"), lok = document.getElementById("lok");
+url.value = location.href.replace(/cetak-qr\.html.*$/, "spot.html");
+let qr;
+function gambar(){
+  const target = url.value.trim() + "?lokasi=" + encodeURIComponent(lok.value.trim().toUpperCase());
+  document.getElementById("qr").innerHTML = "";
+  qr = new QRCode(document.getElementById("qr"), { text: target, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+  document.getElementById("sub").textContent = "Lorong Gedung " + lok.value.trim().toUpperCase() + ". Pindai kode ini, lalu lihat ke layar TV.";
+}
+url.addEventListener("input", gambar); lok.addEventListener("input", gambar);
+gambar();
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cek Perangkat – Spot Foto</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--malam:#061631;--kartu:#0d2a57;--garis:rgba(255,255,255,.14);--teks:#f2f6ff;--redup:rgba(226,236,255,.7);
+  --hijau:#3ddc97;--kuning:#ffd27a;--merah:#ff8a7a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:var(--malam);color:var(--teks);font-size:18px}
+main{max-width:1180px;margin:0 auto;padding:32px 28px 60px}
+h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.sub{margin:8px 0 0;color:var(--redup)}
+.atas{display:grid;grid-template-columns:1fr 400px;gap:24px;margin-top:26px;align-items:start}
+.ringkas{padding:22px 24px;border-radius:20px;background:var(--kartu);border:1px solid var(--garis)}
+.ringkas b{display:block;font-size:26px;font-weight:800}
+.ringkas.ok{border-color:var(--hijau)} .ringkas.peringatan{border-color:var(--kuning)} .ringkas.gagal{border-color:var(--merah)}
+video{width:100%;aspect-ratio:16/9;background:#000;border-radius:16px;object-fit:cover;transform:scaleX(-1)}
+ul{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:10px}
+li{display:grid;grid-template-columns:40px 230px 1fr;gap:14px;align-items:baseline;padding:14px 18px;border-radius:14px;background:var(--kartu)}
+li .i{font-size:22px} li .n{font-weight:800} li .d{color:var(--redup);font-size:16px;line-height:1.45;word-break:break-word}
+.tombol{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+button{font:inherit;font-weight:800;font-size:17px;padding:14px 22px;border-radius:14px;border:0;background:#fff;color:var(--malam);cursor:pointer}
+button.dua{background:rgba(255,255,255,.12);color:var(--teks);border:1px solid var(--garis)}
+button:focus-visible,input:focus-visible{outline:3px solid #5aa2ff;outline-offset:3px}
+section{margin-top:36px;padding:24px;border-radius:20px;background:var(--kartu);border:1px solid var(--garis)}
+section h2{margin:0;font-size:24px}
+label{display:grid;gap:6px;margin-top:14px;font-weight:700}
+input{font:inherit;padding:12px 14px;border-radius:12px;border:1px solid var(--garis);background:#08204a;color:var(--teks)}
+.catatan{color:var(--redup);font-size:15px;margin-top:12px;line-height:1.5}
+@media (max-width:900px){.atas{grid-template-columns:1fr}li{grid-template-columns:32px 1fr}li .d{grid-column:2}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Cek perangkat Spot Foto</h1>
+  <p class="sub">Buka halaman ini di TV box (lewat Fully Kiosk atau browser yang dipakai) untuk memastikan semuanya siap.</p>
+
+  <div class="atas">
+    <div>
+      <div class="ringkas" id="ringkas"><b>Memeriksa…</b><span id="ringkasTeks">Izinkan akses kamera bila diminta.</span></div>
+      <ul id="daftar"></ul>
+      <div class="tombol">
+        <button id="ulang">Periksa ulang</button>
+        <button class="dua" id="salin">Salin laporan</button>
+      </div>
+    </div>
+    <div><video id="vid" playsinline muted></video><p class="catatan">Pratinjau kamera (tercermin, seperti di layar Spot Foto).</p></div>
+  </div>
+
+  <section>
+    <h2>Login akun layar TV</h2>
+    <p class="catatan">Hanya untuk mode Firebase. Login disimpan di perangkat ini saja, tidak di kode. Gunakan akun email khusus layar TV yang dibuat di Firebase Authentication.</p>
+    <label>Email akun TV<input id="email" type="email" autocomplete="off"></label>
+    <label>Kata sandi<input id="sandi" type="password" autocomplete="off"></label>
+    <div class="tombol"><button id="simpanLogin">Simpan login</button><button class="dua" id="hapusLogin">Hapus login</button></div>
+    <p class="catatan" id="statusLogin"></p>
+  </section>
+</main>
+
+<script src="spotfoto-config.js"></script>
+<script src="spotfoto-transport.js"></script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const C = window.SPOTFOTO_CONFIG || {};
+const hasil = [];
+const IKON = { ok: "✅", peringatan: "⚠️", gagal: "❌", info: "ℹ️" };
+const tunggu = ms => new Promise(r => setTimeout(r, ms));
+
+function tambah(nama, status, detail) {
+  hasil.push({ nama, status, detail });
+  const li = document.createElement("li");
+  li.innerHTML = `<span class="i">${IKON[status]}</span><span class="n"></span><span class="d"></span>`;
+  li.querySelector(".n").textContent = nama; li.querySelector(".d").textContent = detail;
+  $("daftar").appendChild(li);
+}
+const ms = t => Math.round(t) + " ms";
+
+async function periksa() {
+  hasil.length = 0; $("daftar").innerHTML = "";
+  $("ringkas").className = "ringkas"; $("ringkas").querySelector("b").textContent = "Memeriksa…";
+
+  // 1. Perangkat
+  const mem = navigator.deviceMemory ? navigator.deviceMemory + " GB RAM, " : "";
+  tambah("Perangkat", "info", `${mem}${navigator.hardwareConcurrency || "?"} inti CPU, layar ${screen.width}×${screen.height} (DPR ${devicePixelRatio}). ${navigator.userAgent}`);
+
+  // 2. Kamera
+  const vid = $("vid");
+  let stream = null;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("getUserMedia tidak tersedia (halaman harus dibuka lewat https)");
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    vid.srcObject = stream; await vid.play();
+    for (let i = 0; i < 40 && !vid.videoWidth; i++) await tunggu(50);
+    const set = stream.getVideoTracks()[0].getSettings();
+    const daftarKam = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+    // ukur fps nyata
+    let n = 0; const t0 = performance.now();
+    if (vid.requestVideoFrameCallback) {
+      await new Promise(r => { const f = () => { n++; if (performance.now() - t0 < 2000) vid.requestVideoFrameCallback(f); else r(); }; vid.requestVideoFrameCallback(f); });
+    }
+    const fps = n ? Math.round(n / ((performance.now() - t0) / 1000)) : (set.frameRate ? Math.round(set.frameRate) : null);
+    const w = vid.videoWidth, h = vid.videoHeight;
+    const st = w >= 1920 ? "ok" : (w >= 1280 ? "peringatan" : "gagal");
+    tambah("Kamera", st, `${w}×${h}${fps ? ", sekitar " + fps + " fps" : ""}. ${daftarKam.length} kamera terdeteksi: ${daftarKam.map(d => d.label || "(tanpa nama)").join(", ")}.` +
+      (st === "ok" ? "" : st === "peringatan" ? " Resolusi 720p: Feed 4:5 akan kurang tajam (diperbesar sekitar 1,9×)." : " Resolusi terlalu rendah untuk Spot Foto."));
+    if (fps && fps < 15) tambah("Kelancaran kamera", "peringatan", "Gambar kamera kurang dari 15 fps; preview di TV akan terasa patah-patah.");
+  } catch (e) {
+    tambah("Kamera", "gagal", "Kamera tidak bisa dibuka: " + (e.message || e.name) + ". Periksa kabel USB, izin kamera di Fully Kiosk, atau coba port USB lain.");
+  }
+
+  // 3. Filter kanvas
+  try {
+    const c = document.createElement("canvas"); c.width = c.height = 4;
+    const x = c.getContext("2d"); x.filter = "grayscale(1)"; x.fillStyle = "#f00"; x.fillRect(0, 0, 4, 4);
+    const [r, g, b] = x.getImageData(1, 1, 1, 1).data;
+    tambah("Filter foto", r === g && g === b ? "ok" : "gagal", r === g && g === b ? "Filter kanvas didukung." : "Filter kanvas tidak didukung; filter tidak akan muncul di hasil foto. Perbarui Android System WebView.");
+  } catch (e) { tambah("Filter foto", "gagal", String(e)); }
+
+  // 4. Kecepatan olah foto (simulasi Feed 4:5 dan Story)
+  if (stream && vid.videoWidth) {
+    const ukur = (w, h, story) => {
+      const t0 = performance.now();
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      const x = c.getContext("2d"); x.filter = "sepia(.28) saturate(1.25) contrast(1.05)";
+      x.drawImage(vid, 0, 0, w, h);
+      if (story) {
+        const k = document.createElement("canvas"); k.width = 108; k.height = 192;
+        const kx = k.getContext("2d"); kx.filter = "blur(4px) brightness(.5)"; kx.drawImage(c, 0, 0, 108, 192);
+        const s = document.createElement("canvas"); s.width = 1080; s.height = 1920;
+        const sx = s.getContext("2d"); sx.drawImage(k, 0, 0, 1080, 1920); sx.drawImage(c, 80, 420, 920, 1150);
+        s.toDataURL("image/jpeg", .9);
+      } else c.toDataURL("image/jpeg", .9);
+      return performance.now() - t0;
+    };
+    const rata = (fn) => { fn(); let t = 0; for (let i = 0; i < 3; i++) t += fn(); return t / 3; };
+    const feed = rata(() => ukur(1080, 1350, false)), story = rata(() => ukur(920, 1150, true));
+    const terburuk = Math.max(feed, story);
+    tambah("Kecepatan olah foto", terburuk < 1500 ? "ok" : terburuk < 4000 ? "peringatan" : "gagal",
+      `Feed 4:5: ${ms(feed)}, Story: ${ms(story)}. ` + (terburuk < 1500 ? "Cepat." : terburuk < 4000 ? "Masih bisa dipakai, tetapi ada jeda setelah jepret." : "Terlalu lambat; pertimbangkan TV box yang lebih kuat."));
+  }
+
+  // 5. Font
+  try {
+    await Promise.all([document.fonts.load('700 40px "Plus Jakarta Sans"'), document.fonts.load("700 40px Caveat")]);
+    const ok = document.fonts.check('700 40px "Plus Jakarta Sans"') && document.fonts.check("700 40px Caveat");
+    tambah("Font bingkai", ok ? "ok" : "peringatan", ok ? "Plus Jakarta Sans dan Caveat termuat." : "Font belum termuat (cek internet); bingkai memakai font cadangan.");
+  } catch (e) { tambah("Font bingkai", "peringatan", String(e)); }
+
+  // 6. Firebase
+  if (C.FIREBASE && C.FIREBASE.databaseURL) {
+    let login = null; try { login = JSON.parse(localStorage.getItem("spotfoto-tv-login") || "null"); } catch (e) {}
+    if (!login) tambah("Firebase", "gagal", "Login akun layar TV belum disimpan (lihat bagian bawah halaman ini).");
+    else {
+      try {
+        const T = SpotTransport.buat({ lokasi: C.LOKASI || "F4", firebase: C.FIREBASE });
+        const uid = await Promise.race([T.masuk(login), tunggu(10000).then(() => { throw new Error("waktu habis"); })]);
+        await T.sekali("perintah");   // hanya akun TV yang boleh membaca ini
+        tambah("Firebase", "ok", "Masuk sebagai akun TV dan aturan keamanan mengenali layar ini (uid " + uid.slice(0, 6) + "…).");
+      } catch (e) { tambah("Firebase", "gagal", "Tidak dapat masuk atau membaca data: " + (e.code || e.message) + ". Periksa email/sandi dan email TV di database.rules.json."); }
+    }
+  } else tambah("Firebase", "info", "Belum diatur (mode uji lokal). Isi FIREBASE di spotfoto-config.js untuk pemakaian nyata.");
+
+  // 7. Apps Script
+  if (C.APPS_SCRIPT) {
+    try {
+      const r = await fetch(C.APPS_SCRIPT + "?aksi=pengaturan&lokasi=" + encodeURIComponent(C.LOKASI || "F4"));
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.pesan || "respons tidak ok");
+      const p = j.pengaturan || {};
+      tambah("Apps Script & Sheet", "ok", `Tersambung. FOTO_AKTIF: ${p.FOTO_AKTIF !== false ? "ya" : "tidak"}, TEKS_AKTIF: ${p.TEKS_AKTIF !== false ? "ya" : "tidak"}, JUDUL: ${p.JUDUL || "-"}.`);
+    } catch (e) { tambah("Apps Script & Sheet", "gagal", "Tidak dapat memuat pengaturan: " + e.message + ". Pastikan siapkanSpotFoto() sudah dijalankan dan deployment bisa diakses Siapa saja."); }
+  } else tambah("Apps Script & Sheet", "info", "Belum diatur. Tanpa ini foto langsung dikirim ke HP, tanpa salinan di Drive dan tanpa catatan.");
+
+  // 8. Video (untuk boomerang nanti)
+  const mr = window.MediaRecorder;
+  const h264 = mr && ["video/mp4;codecs=avc1.42E01F", "video/mp4;codecs=avc1"].some(m => mr.isTypeSupported(m));
+  tambah("Video (boomerang, ditunda)", h264 ? "ok" : "info", h264 ? "MP4 H.264 didukung; boomerang bisa diaktifkan nanti." : "MP4 H.264 belum didukung. Tidak masalah selama boomerang ditunda.");
+
+  // 9. Penyimpanan browser
+  if (navigator.storage && navigator.storage.estimate) {
+    const e = await navigator.storage.estimate();
+    tambah("Penyimpanan browser", "info", `Terpakai ${Math.round((e.usage || 0) / 1048576)} MB dari kuota ${Math.round((e.quota || 0) / 1048576)} MB.`);
+  }
+
+  if (stream) setTimeout(() => stream.getTracks().forEach(t => t.stop()), 15000);   // pratinjau 15 detik lalu kamera dimatikan
+
+  const gagal = hasil.filter(x => x.status === "gagal").length, warn = hasil.filter(x => x.status === "peringatan").length;
+  $("ringkas").className = "ringkas " + (gagal ? "gagal" : warn ? "peringatan" : "ok");
+  $("ringkas").querySelector("b").textContent = gagal ? "Belum siap" : warn ? "Siap, dengan catatan" : "Siap dipakai";
+  $("ringkasTeks").textContent = gagal ? `${gagal} pemeriksaan gagal. Lihat tanda ❌ di bawah.` : warn ? `${warn} hal perlu diperhatikan.` : "Semua pemeriksaan penting lolos.";
+}
+
+$("ulang").onclick = periksa;
+$("salin").onclick = async () => {
+  const teks = "Laporan cek perangkat Spot Foto, " + new Date().toLocaleString("id-ID") + "\n" +
+    hasil.map(x => `${IKON[x.status]} ${x.nama}: ${x.detail}`).join("\n");
+  try { await navigator.clipboard.writeText(teks); $("salin").textContent = "Tersalin"; }
+  catch (e) { prompt("Salin laporan ini:", teks); }
+  setTimeout(() => $("salin").textContent = "Salin laporan", 2000);
+};
+
+// Login akun TV
+function tampilLogin() {
+  let l = null; try { l = JSON.parse(localStorage.getItem("spotfoto-tv-login") || "null"); } catch (e) {}
+  $("statusLogin").textContent = l ? "Login tersimpan untuk " + l.email + "." : "Belum ada login tersimpan.";
+  if (l) $("email").value = l.email;
+}
+$("simpanLogin").onclick = () => {
+  const email = $("email").value.trim(), sandi = $("sandi").value;
+  if (!email || !sandi) { $("statusLogin").textContent = "Isi email dan kata sandi."; return; }
+  localStorage.setItem("spotfoto-tv-login", JSON.stringify({ email, sandi }));
+  $("sandi").value = ""; tampilLogin(); periksa();
+};
+$("hapusLogin").onclick = () => { localStorage.removeItem("spotfoto-tv-login"); tampilLogin(); };
+tampilLogin();
+periksa();
+})();
+</script>
+</body>
+</html>
