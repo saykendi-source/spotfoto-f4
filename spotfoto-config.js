@@ -7,7 +7,6 @@
 window.SPOTFOTO_CONFIG = {
   // Kosongkan (null) untuk uji coba lokal: buka index.html dan spot.html
   // di dua tab browser yang sama.
-  FIREBASE: null,
   /* Contoh untuk pemakaian nyata:
   FIREBASE: {
     apiKey: "AIzaSyCocMcS140J7Zu15En1Fzm5lyEHsYJFZb4",
