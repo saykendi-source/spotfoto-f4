@@ -947,7 +947,9 @@
     const pakaiDrive = !!C.APPS_SCRIPT;
     await T.set(`sesi/${sid}/hasil/${id}`, {
       jenis: blob ? "video" : "foto", format: labelFormat, pratinjau, nama, mime, h264,
-      status: pakaiDrive ? "mengunggah" : "siap", unduh: pakaiDrive ? null : sedang, t: T.WAKTU
+      status: pakaiDrive ? "mengunggah" : "siap", unduh: pakaiDrive ? null : sedang,
+      berkas: blob ? null : sedang,   // foto utuh untuk HP: bisa langsung disimpan ke galeri tanpa menunggu Drive
+      t: T.WAKTU
     });
 
     const img = $("sfFoto"), vid = $("sfVid");

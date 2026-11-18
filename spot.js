@@ -161,50 +161,61 @@
     if (vid && h.unduh && h.unduh.startsWith("data:")) { img.hidden = true; v.hidden = false; if (v.dataset.nama !== h.nama) { v.src = h.unduh; v.dataset.nama = h.nama; } }
     else { v.hidden = true; v.removeAttribute("src"); delete v.dataset.nama; img.hidden = false; if (img.dataset.nama !== h.nama) { img.src = h.pratinjau || ""; img.dataset.nama = h.nama; } }
 
-    const a = $("hasilUnduh");
-    if (h.status === "mengunggah" || !h.unduh) {
+    const a = $("hasilUnduh"), adaBerkas = !!sumberBerkas(h);
+    a.onclick = null;
+    if (!adaBerkas && (h.status === "mengunggah" || !h.unduh)) {
       a.setAttribute("aria-disabled", "true"); a.removeAttribute("href");
-      a.textContent = "Menyiapkan link unduh…";
+      a.textContent = "Menyiapkan foto…";
     } else {
       a.removeAttribute("aria-disabled");
       a.href = hrefUnduh(h);
       a.setAttribute("download", h.nama || "spotfoto.jpg");
-      if (!h.unduh.startsWith("data:")) a.target = "_blank"; else a.removeAttribute("target");
-      a.textContent = vid ? "Simpan video" : "Simpan foto";
+      if (adaBerkas) a.removeAttribute("target"); else a.target = "_blank";
+      const file = adaBerkas ? berkasFile(h) : null;
+      // iPhone/iPad: unduhan biasa masuk ke aplikasi File. Lewat lembar bagikan,
+      // pilihan "Simpan Gambar" memasukkan foto langsung ke aplikasi Foto.
+      const lewatBagikan = IOS && file && navigator.canShare && navigator.canShare({ files: [file] });
+      if (lewatBagikan) {
+        a.onclick = e => { e.preventDefault(); navigator.share({ files: [file] }).catch(() => {}); };
+        a.textContent = vid ? "Simpan ke Foto" : "Simpan ke Foto";
+      } else a.textContent = vid ? "Simpan video" : "Simpan ke Galeri";
+      a.dataset.cara = lewatBagikan ? "bagikan" : "unduh";
     }
+    const drive = $("hasilDrive");
+    drive.hidden = !h.lihat;
+    if (h.lihat) drive.href = h.lihat;
+
+    const ios = a.dataset.cara === "bagikan";
     $("hasilCatatan").textContent = vid
       ? (h.h264 ? "Video MP4 siap diunggah ke Story atau Reels." : "Video ini memakai format yang belum tentu diterima Instagram, terutama di iPhone. Jika gagal diunggah, simpan ulang lewat aplikasi edit video.")
-      : (h.catatan === "drive-gagal" ? "Penyimpanan cadangan sedang bermasalah, jadi foto langsung dikirim ke HP-mu. Simpan sekarang ya."
-        : "Jika tombol simpan tidak bekerja, tekan lama gambar lalu pilih simpan.");
-    siapkanBagikan(h);
+      : h.catatan === "drive-gagal" ? "Penyimpanan cadangan sedang bermasalah, jadi foto hanya ada di HP-mu. Simpan sekarang ya."
+      : ios ? "Ketuk Simpan ke Foto, lalu pilih “Simpan Gambar”. Foto masuk ke aplikasi Foto."
+      : IOS ? "Foto tersimpan di aplikasi File → Unduhan. Atau tekan lama gambar di atas, lalu pilih “Tambahkan ke Foto”."
+      : "Foto tersimpan di folder Download dan muncul di Galeri atau Google Foto, album Download.";
   }
 
-  // Browser (terutama Safari dan Chrome di HP) menolak membuka tautan data: secara langsung.
-  // Ubah menjadi alamat blob: lokal supaya tombol Simpan bisa mengunduh berkasnya.
-  const blobCache = {};
-  function hrefUnduh(h) {
-    if (!h.unduh || !h.unduh.startsWith("data:")) return h.unduh;
-    if (!blobCache[h.nama]) {
-      const [kepala, isi] = h.unduh.split(",");
-      const mime = (kepala.match(/data:([^;]+)/) || [])[1] || "image/jpeg";
+  const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  // Foto utuh yang dikirim TV (berkas), atau cadangan bila Drive gagal (unduh berupa data:).
+  const sumberBerkas = h => h.berkas || (h.unduh && h.unduh.startsWith("data:") ? h.unduh : null);
+  const fileCache = {};
+  function berkasFile(h) {
+    if (!fileCache[h.nama]) {
+      const [kepala, isi] = sumberBerkas(h).split(",");
+      const mime = (kepala.match(/data:([^;]+)/) || [])[1] || h.mime || "image/jpeg";
       const bin = atob(isi), arr = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-      blobCache[h.nama] = URL.createObjectURL(new Blob([arr], { type: mime }));
+      fileCache[h.nama] = new File([arr], h.nama || "spotfoto.jpg", { type: mime });
     }
-    return blobCache[h.nama];
+    return fileCache[h.nama];
   }
 
-  async function siapkanBagikan(h) {
-    const tb = $("hasilBagikan");
-    tb.hidden = true;
-    if (!navigator.canShare || !h.unduh || !h.unduh.startsWith("data:")) return;
-    try {
-      const blob = await (await fetch(h.unduh)).blob();
-      const file = new File([blob], h.nama, { type: h.mime || "image/jpeg" });
-      if (!navigator.canShare({ files: [file] })) return;
-      tb.hidden = false;
-      tb.onclick = () => navigator.share({ files: [file], title: "Spot Foto" }).catch(() => {});
-    } catch (e) {}
+  // Browser HP menolak membuka tautan data: secara langsung, jadi foto diubah
+  // menjadi alamat blob: lokal supaya bisa diunduh. Tanpa berkas lokal: link Drive.
+  const blobCache = {};
+  function hrefUnduh(h) {
+    if (!sumberBerkas(h)) return h.unduh;
+    if (!blobCache[h.nama]) blobCache[h.nama] = URL.createObjectURL(berkasFile(h));
+    return blobCache[h.nama];
   }
 
   const ALASAN = {
@@ -224,9 +235,9 @@
     sesiSaya = null; info = null; hasilSesi = {}; batas = 0; ingin = false;
     const [j, t] = ALASAN[alasan] || ALASAN.pengguna;
     $("selesaiJudul").textContent = j;
-    const siap = galeri.filter(g => g.unduh);
+    const siap = galeri.filter(g => g.unduh || g.berkas);
     $("selesaiTeks").textContent = siap.length ? (t ? t + " " : "") + "Fotomu:" : (t || "Pindai QR lagi kapan saja untuk berfoto.");
-    $("galeri").innerHTML = siap.map(g => `<a href="${hrefUnduh(g)}" download="${g.nama}"${g.unduh.startsWith("data:") ? "" : ' target="_blank" rel="noopener"'}><img src="${g.pratinjau}" alt="${g.jenis === "video" ? "Boomerang" : "Foto"} ${g.nama}"><b>${g.jenis === "video" ? "🔁 Boomerang" : String(g.format || "").startsWith("strip") ? "🎞️ Strip" : ((P.format.find(f => f.id === g.format) || {}).nama || "")}</b></a>`).join("");
+    $("galeri").innerHTML = siap.map(g => `<a href="${hrefUnduh(g)}" download="${g.nama}"${sumberBerkas(g) ? "" : ' target="_blank" rel="noopener"'}><img src="${g.pratinjau}" alt="${g.jenis === "video" ? "Boomerang" : "Foto"} ${g.nama}"><b>${g.jenis === "video" ? "🔁 Boomerang" : String(g.format || "").startsWith("strip") ? "🎞️ Strip" : ((P.format.find(f => f.id === g.format) || {}).nama || "")}</b></a>`).join("");
     $("catatanHapus").hidden = !siap.some(g => g.lihat);
     ke("selesai");
   }
