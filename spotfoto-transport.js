@@ -42,8 +42,7 @@
     // foto = ukuran bagian foto (diberi bingkai); kartu = posisi foto di poster Story
     format: [
       { id: "feed",       nama: "Feed 4:5",        w: 1080, h: 1350, foto: [1080, 1350] },
-      { id: "story",      nama: "Story 9:16",      w: 1080, h: 1920, foto: [920, 1150], kartu: [80, 420, 920, 1150] },
-      { id: "storylebar", nama: "Story rombongan", w: 1080, h: 1920, foto: [1000, 563], kartu: [40, 680, 1000, 563] },
+      // Format Story (foto di poster 9:16) dihapus: hasil cukup fotonya saja.
       { id: "lebar",      nama: "Lebar 16:9",      w: 1600, h: 900,  foto: [1600, 900] }
     ],
     mode: [

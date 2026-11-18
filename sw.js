@@ -3,8 +3,8 @@
    - Font Google dan gambar wallpaper: pakai salinan tersimpan dulu.
    - Data jadwal (script.google.com) tidak disentuh; halaman menyimpannya sendiri di localStorage.
    Naikkan nomor versi CACHE bila ingin memaksa pembaruan. */
-const CACHE = "jadwal-tv-v4";
-const SHELL = ["./", "./index.html", "./spotfoto.js", "./spotfoto-transport.js", "./spotfoto-config.js"];
+const CACHE = "jadwal-tv-v6";
+const SHELL = ["./", "./index.html", "./spotfoto.js", "./spotfoto-transport.js", "./spotfoto-config.js", "./manifest.json", "./ikon-192.png", "./ikon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

@@ -632,7 +632,7 @@
       ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 3; ctx.setLineDash([14, 10]);
       ctx.strokeRect(r.x + 1.5, 1.5, r.w - 3, 1077); ctx.setLineDash([]);
       ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = `700 30px ${FONT}`; ctx.textAlign = "center";
-      const ket = opsi.format === "story" ? ["Area foto", "akan dipasang di poster Story 9:16"] : ["Area foto", "Pastikan semua masuk kotak"];
+      const ket = ["Area foto", "Pastikan semua masuk kotak"];
       ctx.fillText(ket[0], r.x / 2, 520); ctx.font = `600 24px ${FONT}`;
       ctx.fillText(ket[1], r.x / 2, 560, r.x - 40);
       ctx.textAlign = "start";
